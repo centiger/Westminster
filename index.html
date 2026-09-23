@@ -24,13 +24,34 @@ main{padding:16px}.search{width:100%;padding:13px;border:1px solid var(--line);b
 <script src="questions.js"></script>
 <script>
 const KEY='westminster-progress-v1';
-const CEN_BIBLE_URL='https://centiger.github.io/CEN-Bible/';
+const CEN_BIBLE_FALLBACK='https://centiger.github.io/';
+function getCenBibleBase(){
+  // 센바이블 2.0에서 소요리문답으로 들어온 경우 실제 센바이블 주소를 자동 기억합니다.
+  try{
+    const ref=document.referrer ? new URL(document.referrer) : null;
+    if(ref && ref.hostname==='centiger.github.io' && !/\/Westminster\/?$/i.test(ref.pathname)){
+      ref.search=''; ref.hash='';
+      sessionStorage.setItem('cenBibleBaseUrl', ref.toString());
+      localStorage.setItem('cenBibleBaseUrl', ref.toString());
+      return ref.toString();
+    }
+  }catch(e){}
+  return sessionStorage.getItem('cenBibleBaseUrl') ||
+         localStorage.getItem('cenBibleBaseUrl') ||
+         CEN_BIBLE_FALLBACK;
+}
 let done=new Set(JSON.parse(localStorage.getItem(KEY)||'[]')), view='all', unitFilter=null;
 const app=document.querySelector('#app');
 function save(){localStorage.setItem(KEY,JSON.stringify([...done].sort((a,b)=>a-b)));progress()}
 function progress(){let n=done.size;document.querySelector('#bar').style.width=(n/107*100)+'%';document.querySelector('#stats').textContent=`${n} / 107 학습 완료 · ${Math.round(n/107*100)}%`}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-function bibleUrl(ref){const u=new URL(CEN_BIBLE_URL);u.searchParams.set('ref',ref);u.searchParams.set('source','westminster');u.searchParams.set('returnTo',location.href.split('#')[0]);return u.toString()}
+function bibleUrl(ref){
+  const u=new URL(getCenBibleBase());
+  u.searchParams.set('ref',ref);
+  u.searchParams.set('source','westminster');
+  u.searchParams.set('returnTo',location.href.split('#')[0]);
+  return u.toString();
+}
 function refLink(ref,label){return `<a class="bibleRef" href="${esc(bibleUrl(ref))}" title="CEN Bible에서 ${esc(ref)} 열기">${esc(label||ref)}</a>`}
 function proofLinks(text){
   let currentBook='', currentChapter=''; const out=[];
@@ -42,7 +63,14 @@ function proofLinks(text){
     else {m=seg.match(/^(\d+)\s*:\s*(.+)$/); if(m){currentChapter=m[1];seg=m[2]}}
     if(!currentBook||!currentChapter){out.push(esc(part));return}
     const pieces=seg.split(/\s*,\s*/); const rendered=[];
-    pieces.forEach(piece=>{piece=piece.trim(); if(!piece)return; let ch=currentChapter, verses=piece; const cm=piece.match(/^(\d+)\s*:\s*(.+)$/); if(cm){ch=cm[1];verses=cm[2];currentChapter=ch} const ref=`${currentBook} ${ch}:${verses}`; rendered.push(refLink(ref,piece));});
+    pieces.forEach(piece=>{
+      piece=piece.trim(); if(!piece)return;
+      let ch=currentChapter, verses=piece;
+      const cm=piece.match(/^(\d+)\s*:\s*(.+)$/);
+      if(cm){ch=cm[1];verses=cm[2];currentChapter=ch}
+      const ref=`${currentBook} ${ch}:${verses}`;
+      rendered.push(refLink(ref,ref));
+    });
     out.push(rendered.join(', '));
   }); return out.join('');
 }
