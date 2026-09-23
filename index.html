@@ -9,7 +9,7 @@
 :root{--bg:#f5f1e8;--paper:#fffdf8;--ink:#24211d;--muted:#766f65;--line:#ddd4c6;--accent:#405c4b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
 header{position:sticky;top:0;z-index:5;background:rgba(245,241,232,.96);border-bottom:1px solid var(--line);padding:18px 16px 12px}.wrap{max-width:760px;margin:auto}.brand{font-size:13px;color:var(--muted)}h1{font-family:serif;margin:3px 0 12px;font-size:27px}
-.progress{height:9px;background:#e3ddd2;border-radius:10px;overflow:hidden}.progress i{display:block;height:100%;background:var(--accent);width:0}.stats{font-size:13px;color:var(--muted);margin-top:7px}
+.progress{height:9px;background:#e3ddd2;border-radius:10px;overflow:hidden}.progress i{display:block;height:100%;background:var(--accent);width:0}.stats{font-size:13px;color:var(--muted);margin-top:7px}.resetWrap{text-align:right;margin-top:5px}.resetBtn{border:0;background:transparent;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;padding:3px 0}
 nav{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}button,input{font:inherit}nav button,.btn{border:1px solid var(--line);background:var(--paper);border-radius:12px;padding:10px;cursor:pointer}.active{background:var(--accent)!important;color:white!important}
 main{padding:16px}.search{width:100%;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--paper);margin-bottom:12px}.card{background:var(--paper);border:1px solid var(--line);border-radius:17px;padding:18px;margin:0 0 12px;box-shadow:0 2px 8px #00000008}
 .num{font-size:13px;color:var(--accent);font-weight:700}.q{font-size:18px;font-weight:700;line-height:1.55;margin:6px 0 12px}.a{line-height:1.75;white-space:pre-wrap}
@@ -19,7 +19,7 @@ main{padding:16px}.search{width:100%;padding:13px;border:1px solid var(--line);b
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand">CEN BIBLE 2.0 · 신앙의 기초</div><h1>웨스트민스터 소요리문답</h1><div class="progress"><i id="bar"></i></div><div class="stats" id="stats"></div><nav><button data-view="all" class="active">전체 문답</button><button data-view="units">주제별</button><button data-view="check">학습 확인</button></nav></div></header>
+<header><div class="wrap"><div class="brand">CEN BIBLE 2.0 · 신앙의 기초</div><h1>웨스트민스터 소요리문답</h1><div class="progress"><i id="bar"></i></div><div class="stats" id="stats"></div><div class="resetWrap"><button type="button" class="resetBtn" onclick="resetLearningProgress()">학습 기록 초기화</button></div><nav><button data-view="all" class="active">전체 문답</button><button data-view="units">주제별</button><button data-view="check">학습 확인</button></nav></div></header>
 <main class="wrap"><div id="app"></div></main><footer>전체 107문답 · 학습 기록은 이 기기에 저장됩니다.</footer>
 <script src="questions.js"></script>
 <script>
@@ -43,6 +43,19 @@ function getCenBibleBase(){
 let done=new Set(JSON.parse(localStorage.getItem(KEY)||'[]')), view='all', unitFilter=null;
 const app=document.querySelector('#app');
 function save(){localStorage.setItem(KEY,JSON.stringify([...done].sort((a,b)=>a-b)));progress()}
+function resetLearningProgress(){
+  if(done.size===0){ alert('초기화할 학습 기록이 없습니다.'); return; }
+  const count=done.size;
+  if(!confirm(`학습 기록을 초기화하시겠습니까?\n\n지금까지 완료한 ${count}개 문답의 학습 기록이 모두 삭제됩니다.`)) return;
+  done.clear();
+  localStorage.removeItem(KEY);
+  progress();
+  if(view==='all') renderAll();
+  else if(view==='units') renderUnits();
+  else renderCheck();
+  window.scrollTo({top:0,behavior:'smooth'});
+  alert('학습 기록이 초기화되었습니다.');
+}
 function progress(){let n=done.size;document.querySelector('#bar').style.width=(n/107*100)+'%';document.querySelector('#stats').textContent=`${n} / 107 학습 완료 · ${Math.round(n/107*100)}%`}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function bibleUrl(ref){
