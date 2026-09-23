@@ -1,0 +1,9 @@
+{
+  "name": "웨스트민스터 소요리문답",
+  "short_name": "소요리문답",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f1e8",
+  "theme_color": "#f5f1e8",
+  "description": "웨스트민스터 소요리문답 107문답 학습 PWA"
+}

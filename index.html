@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f1e8">
+<title>웨스트민스터 소요리문답</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--bg:#f5f1e8;--paper:#fffdf8;--ink:#24211d;--muted:#766f65;--line:#ddd4c6;--accent:#405c4b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+header{position:sticky;top:0;z-index:5;background:rgba(245,241,232,.96);border-bottom:1px solid var(--line);padding:18px 16px 12px}
+.wrap{max-width:760px;margin:auto}.brand{font-size:13px;color:var(--muted)}h1{font-family:serif;margin:3px 0 12px;font-size:27px}
+.progress{height:9px;background:#e3ddd2;border-radius:10px;overflow:hidden}.progress i{display:block;height:100%;background:var(--accent);width:0}
+.stats{font-size:13px;color:var(--muted);margin-top:7px}
+nav{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:12px}button,input{font:inherit}
+nav button,.btn{border:1px solid var(--line);background:var(--paper);border-radius:12px;padding:10px;cursor:pointer}.active{background:var(--accent)!important;color:white!important}
+main{padding:16px}.search{width:100%;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--paper);margin-bottom:12px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:17px;padding:18px;margin:0 0 12px;box-shadow:0 2px 8px #00000008}
+.num{font-size:13px;color:var(--accent);font-weight:700}.q{font-size:18px;font-weight:700;line-height:1.55;margin:6px 0 12px}.a{line-height:1.75;white-space:pre-wrap}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:15px}.done{border:0;border-radius:10px;padding:9px 12px;background:#e8e2d7}.done.yes{background:var(--accent);color:#fff}
+.unit{cursor:pointer}.unit h3{margin:0 0 5px}.unit p{margin:0;color:var(--muted)}
+.quizbox{text-align:center;padding:30px 18px}.quizbox .q{font-size:21px}.answerHidden{display:none}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
+@media(max-width:520px){h1{font-size:23px}.q{font-size:17px}nav button{font-size:13px;padding:9px 5px}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<div class="brand">CEN BIBLE 2.0 · 신앙의 기초</div><h1>웨스트민스터 소요리문답</h1>
+<div class="progress"><i id="bar"></i></div><div class="stats" id="stats"></div>
+<nav><button data-view="all" class="active">전체 문답</button><button data-view="units">주제별</button><button data-view="check">학습 확인</button></nav>
+</div></header>
+<main class="wrap"><div id="app"></div></main>
+<footer>전체 107문답 · 학습 기록은 이 기기에 저장됩니다.</footer>
+<script src="questions.js"></script>
+<script>
+const KEY='westminster-progress-v1';
+let done=new Set(JSON.parse(localStorage.getItem(KEY)||'[]')), view='all', unitFilter=null;
+const app=document.querySelector('#app');
+function save(){localStorage.setItem(KEY,JSON.stringify([...done].sort((a,b)=>a-b)));progress()}
+function progress(){let n=done.size;document.querySelector('#bar').style.width=(n/107*100)+'%';document.querySelector('#stats').textContent=`${n} / 107 학습 완료 · ${Math.round(n/107*100)}%`}
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function card(x){return `<article class="card" id="q${x.id}"><div class="num">제${x.id}문</div><div class="q">${esc(x.q)}</div><div class="a">${esc(x.a)}</div><div class="row"><span></span><button class="done ${done.has(x.id)?'yes':''}" onclick="toggle(${x.id},this)">${done.has(x.id)?'✓ 학습 완료':'학습 완료'}</button></div></article>`}
+function toggle(id,b){done.has(id)?done.delete(id):done.add(id);save();b.classList.toggle('yes');b.textContent=done.has(id)?'✓ 학습 완료':'학습 완료'}
+function renderAll(list=QUESTIONS){app.innerHTML=`<input id="search" class="search" placeholder="문답 번호나 내용 검색">`+list.map(card).join('');document.querySelector('#search').oninput=e=>{let t=e.target.value.trim();let f=QUESTIONS.filter(x=>String(x.id)===t||x.q.includes(t)||x.a.includes(t));document.querySelectorAll('article.card').forEach(el=>el.remove());app.insertAdjacentHTML('beforeend',f.map(card).join(''))}}
+function renderUnits(){app.innerHTML=UNITS.map(u=>{let n=[...done].filter(x=>x>=u.start&&x<=u.end).length,total=u.end-u.start+1;return `<div class="card unit" onclick="openUnit(${u.start},${u.end})"><h3>${u.name}</h3><p>제${u.start}–${u.end}문 · ${n}/${total} 학습</p></div>`}).join('')}
+function openUnit(s,e){view='all';setNav('all');renderAll(QUESTIONS.filter(x=>x.id>=s&&x.id<=e));scrollTo(0,0)}
+function renderCheck(){
+ let pool=done.size?[...done].map(id=>QUESTIONS[id-1]):QUESTIONS;
+ let x=pool[Math.floor(Math.random()*pool.length)];
+ app.innerHTML=`<div class="card quizbox"><div class="num">학습 확인 · 제${x.id}문</div><div class="q">${esc(x.q)}</div><button class="btn" id="show">답 확인하기</button><div id="ans" class="answerHidden"><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><div class="a">${esc(x.a)}</div><div class="row"><button class="btn" onclick="renderCheck()">다른 문답</button><button class="done ${done.has(x.id)?'yes':''}" onclick="toggle(${x.id},this)">${done.has(x.id)?'✓ 학습 완료':'학습 완료'}</button></div></div></div>`;
+ document.querySelector('#show').onclick=e=>{e.target.style.display='none';document.querySelector('#ans').classList.remove('answerHidden')}
+}
+function setNav(v){document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v))}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{view=b.dataset.view;setNav(view);view==='all'?renderAll():view==='units'?renderUnits():renderCheck()});
+progress();renderAll();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js');
+</script>
+</body></html>
